@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyth API - LLM Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #1a73e8;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            display: inline-block;
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pyth API with Local LLM Integration</h1>
+    
+    <div class="card">
+        <h2>API Documentation</h2>
+        <p>This API provides endpoints for managing items and generating text using local LLM models.</p>
+        <p>Use the interactive Swagger UI to explore and test the API:</p>
+        <p>
+            <a href="/docs" class="button">Swagger UI</a>
+            <a href="/redoc" class="button">ReDoc</a>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>LLM Endpoint Example</h2>
+        <p>Generate text using the local LLM model with a POST request to <code>/llm/generate</code>:</p>
+        <pre>
+curl -X 'POST' \
+  'http://localhost:8000/llm/generate' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "prompt": "What is the capital of France?",
+  "max_length": 512,
+  "temperature": 0.7
+}'
+        </pre>
+    </div>
+
+    <div class="card">
+        <h2>Models Available</h2>
+        <p>View information about available models with a GET request to <code>/llm/info</code>:</p>
+        <pre>
+curl -X 'GET' 'http://localhost:8000/llm/info'
+        </pre>
+    </div>
+
+    <script>
+        // Auto-redirect to Swagger UI after 2 seconds
+        setTimeout(function() {
+            window.location.href = "/docs";
+        }, 2000);
+    </script>
+</body>
+</html> 
