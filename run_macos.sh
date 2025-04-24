@@ -22,10 +22,10 @@ else
     export LLM_MODEL=medium
 fi
 
-# Run type checking
+# Run type checking with uv
 echo "Running type checking..."
-mypy main.py
+uv pip run mypy main.py
 
-# Start the server
-echo "Starting API server..."
-python main.py 
+# Start the server in development mode
+echo "Starting API server (development mode)..."
+uv pip run python main.py 

@@ -2,11 +2,20 @@
 
 A simple FastAPI project with GET and POST endpoints using strict typing, featuring a local LLM model optimized for macOS.
 
-## Setup
+## Setup with UV
 
-1. Install dependencies:
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management. If you don't have uv installed:
+
 ```bash
-pip install -e .
+# Install uv (using pip)
+pip install uv
+```
+
+### Installing Dependencies
+
+```bash
+# Install dependencies using uv
+uv pip install -e .
 ```
 
 ## Type Checking
@@ -14,14 +23,15 @@ pip install -e .
 This project uses strict typing with mypy. To run type checks:
 
 ```bash
-mypy main.py
+uv pip run mypy main.py
 ```
 
 ## Running the API
 
-You can run the server directly:
+### Development Mode
 
 ```bash
+# Run in development mode with auto-reload
 python main.py
 ```
 
@@ -32,6 +42,29 @@ For macOS users (especially with Apple Silicon), use the optimized script:
 ```
 
 The script automatically detects your available RAM and selects the best model.
+
+### Production Mode
+
+For production deployment, use Uvicorn directly with production settings:
+
+```bash
+# Install uvicorn[standard] for production-ready server
+uv pip install "uvicorn[standard]"
+
+# Run with production settings
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+```
+
+For running as a service (e.g., with systemd or supervisor):
+
+1. Create a `run_production.sh` script:
+```bash
+#!/bin/bash
+export LLM_MODEL=medium  # Choose model based on available RAM
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+2. Make it executable: `chmod +x run_production.sh`
 
 The API will be available at http://localhost:8000
 
