@@ -18,6 +18,15 @@ dependencies = [
     "python-multipart>=0.0.7",
 ]
 
+[project.optional-dependencies]
+train = [
+    "datasets>=2.15.0",
+    "huggingface_hub>=0.20.3",
+    "peft>=0.7.0",
+    "tqdm>=4.66.0",
+    "numpy>=1.26.0",
+]
+
 [tool.mypy]
 python_version = "3.13"
 warn_return_any = true

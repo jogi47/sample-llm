@@ -30,7 +30,14 @@ class Config:
             "description": "2.7B parameter model, good capabilities while still working on 8GB RAM",
             "min_ram_gb": 8,
             "recommended_for_macos": True
-        }
+        },
+        # Add this section after training a model with train.py
+        # "finetuned": {
+        #     "name": "jogi47/TinyLlama-1.1B-Chat-v1.0-finetuned-YYYY-MM-DD_HH-MM-SS",
+        #     "description": "Custom fine-tuned model",
+        #     "min_ram_gb": 8,
+        #     "recommended_for_macos": True
+        # }
     }
     
     # Default model to use - can be overridden with environment variable

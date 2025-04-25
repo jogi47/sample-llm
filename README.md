@@ -23,7 +23,7 @@ uv pip install -e .
 This project uses strict typing with mypy. To run type checks:
 
 ```bash
-uv pip run mypy main.py
+uv run mypy main.py
 ```
 
 ## Running the API

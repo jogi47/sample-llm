@@ -16,7 +16,7 @@ if [ "$TOTAL_RAM_GB" -lt 8 ]; then
     export LLM_MODEL=tiny
 elif [ "$TOTAL_RAM_GB" -lt 16 ]; then
     echo "8-16GB RAM detected, using 'medium' model"
-    export LLM_MODEL=medium
+    export LLM_MODEL=tiny
 else
     echo "16GB+ RAM detected, using 'medium' model"
     export LLM_MODEL=medium
@@ -24,8 +24,8 @@ fi
 
 # Run type checking with uv
 echo "Running type checking..."
-uv pip run mypy main.py
+uv pip mypy main.py
 
 # Start the server in development mode
 echo "Starting API server (development mode)..."
-uv pip run python main.py 
+uv pip python main.py 
