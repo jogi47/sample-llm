@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from model import llm_handler
 from config import Config
+import chat
 
 # Create FastAPI app with enhanced documentation
 app: FastAPI = FastAPI(
@@ -21,6 +22,7 @@ app: FastAPI = FastAPI(
     * Store and retrieve items
     * Generate text with local LLM models
     * View model information
+    * Chat interface
     
     Models are optimized to run on macOS with 8GB RAM.
     """,
@@ -34,6 +36,13 @@ app: FastAPI = FastAPI(
 static_path = Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
+# Setup templates
+templates_path = Path(__file__).parent / "templates"
+if not templates_path.exists():
+    templates_path.mkdir(parents=True, exist_ok=True)
+
+templates = Jinja2Templates(directory=str(templates_path))
 
 # In-memory storage for items
 items: List[Dict[str, Any]] = []
@@ -67,18 +76,17 @@ class ModelInfo(BaseModel):
     current_model: str = Field(..., description="The currently loaded model name")
     available_models: Dict[str, Dict[str, Any]] = Field(..., description="Information about all available models")
 
-@app.get("/", 
+# Include the chat router
+app.include_router(chat.router)
+
+@app.get("/api", 
     response_class=RedirectResponse,
-    summary="Root endpoint",
+    summary="API Root endpoint",
     description="Redirects to the API documentation page",
     status_code=302,
-    tags=["General"])
-def read_root() -> RedirectResponse:
-    # Check if the static folder exists and contains index.html
-    if (static_path / "index.html").exists():
-        return RedirectResponse(url="/static/index.html")
-    else:
-        return RedirectResponse(url="/docs")
+    tags=["API"])
+def read_api_root() -> RedirectResponse:
+    return RedirectResponse(url="/docs")
 
 @app.get("/welcome", 
     summary="Welcome message",

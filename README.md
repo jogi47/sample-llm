@@ -1,6 +1,14 @@
 # Pyth API
 
-A simple FastAPI project with GET and POST endpoints using strict typing, featuring a local LLM model optimized for macOS.
+A simple FastAPI project with a chat interface and API endpoints, featuring a local LLM model optimized for macOS.
+
+## Features
+
+- **Chat Interface**: Multi-threaded chat UI similar to popular AI chat applications
+- **Dark/Light Theme**: Toggle between dark and light modes
+- **Local LLM Integration**: Run AI models directly on your machine
+- **Model Switching**: Change between different models on-the-fly
+- **API Endpoints**: Access LLM functionality programmatically
 
 ## Setup with UV
 
@@ -26,7 +34,7 @@ This project uses strict typing with mypy. To run type checks:
 uv run mypy main.py
 ```
 
-## Running the API
+## Running the Application
 
 ### Development Mode
 
@@ -43,46 +51,41 @@ For macOS users (especially with Apple Silicon), use the optimized script:
 
 The script automatically detects your available RAM and selects the best model.
 
+The application will be available at:
+- Chat Interface: http://localhost:8000/
+- API Documentation: http://localhost:8000/docs
+
 ### Production Mode
 
-For production deployment, use Uvicorn directly with production settings:
+For production deployment, use the provided production script:
 
 ```bash
-# Install uvicorn[standard] for production-ready server
-uv pip install "uvicorn[standard]"
-
-# Run with production settings
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+./run_production.sh
 ```
 
-For running as a service (e.g., with systemd or supervisor):
+## Using the Chat Interface
 
-1. Create a `run_production.sh` script:
-```bash
-#!/bin/bash
-export LLM_MODEL=medium  # Choose model based on available RAM
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
-```
+1. **Access the Chat Interface**: Open your browser and go to http://localhost:8000/
+2. **Create New Conversations**: Click "New Chat" to start a new thread
+3. **Switch Between Threads**: Click on any thread in the sidebar to switch contexts
+4. **Change Models**: Use the dropdown menu in the top-right to switch between models
+5. **Toggle Dark/Light Mode**: Click the moon/sun icon to change the theme
 
-2. Make it executable: `chmod +x run_production.sh`
+## API Endpoints
 
-The API will be available at http://localhost:8000
+### Chat-related Endpoints
 
-## Interactive API Documentation & Playground
+- `GET /`: Chat interface
+- `POST /api/chat`: Generate a chat response
+- `POST /api/set-model`: Change the active model
 
-This project comes with built-in interactive API documentation:
+### Other API Endpoints
 
-- **Swagger UI**: Available at http://localhost:8000/docs
-  - Interactive playground to test all endpoints
-  - Execute API calls directly from your browser
-  - Test the LLM generation with different parameters
-  - View model schemas and response formats
-
-- **ReDoc**: Available at http://localhost:8000/redoc
-  - Clean, responsive documentation
-  - Better for reading and understanding the API structure
-
-When you start the server and navigate to http://localhost:8000, you'll be redirected to a documentation page that links to both documentation systems.
+- `GET /welcome`: Returns a welcome message
+- `GET /items`: Returns all items in the collection
+- `POST /items`: Add a new item to the collection
+- `POST /llm/generate`: Generate a response from the LLM model
+- `GET /llm/info`: Get information about available models
 
 ## Mac Compatibility
 
@@ -112,50 +115,10 @@ Available models:
 - `small`: bigscience/bloom-560m (works on 4-8GB RAM)
 - `medium`: microsoft/phi-2 (works on 8GB+ RAM)
 
-You can also modify the `config.py` file to add more models or adjust settings.
+## Model Fine-tuning
 
-## API Endpoints
+See [TRAINING.md](TRAINING.md) for information on fine-tuning models with custom datasets.
 
-### GET /welcome
-Returns a welcome message.
+## Testing the API
 
-### GET /items
-Returns all items in the collection.
-
-### POST /items
-Add a new item to the collection.
-
-Example request body:
-```json
-{
-  "name": "Item name",
-  "description": "Item description",
-  "value": 100
-}
-```
-
-### POST /llm/generate
-Generate a response from the local LLM model.
-
-Example request body:
-```json
-{
-  "prompt": "What is the capital of France?",
-  "max_length": 512,
-  "temperature": 0.7,
-  "top_p": 0.95
-}
-```
-
-### GET /llm/info
-Get information about the current LLM model and available models.
-
-## Testing the LLM
-
-You can test the LLM endpoint with the included test script:
-
-```bash
-python test_llm.py
-```
-
-Or use the interactive Swagger UI at http://localhost:8000/docs to test all endpoints directly in your browser.
+You can test the API endpoints with the interactive Swagger UI at http://localhost:8000/docs

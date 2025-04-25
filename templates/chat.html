@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pyth Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="header">
+                <span>PyChat</span>
+                <button class="header-button" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+            </div>
+            <button class="new-chat-btn" id="newChatBtn">New Chat</button>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search your threads...">
+            </div>
+            <div class="thread-list">
+                <div class="thread-list-label">Today</div>
+                <div class="thread-item active" data-id="current">Available models</div>
+                <div class="thread-list-label">Older</div>
+                <div class="thread-item" data-id="welcome">Welcome to PyChat</div>
+                <div class="thread-item" data-id="faq">FAQ</div>
+            </div>
+            <div class="user-section">
+                <i class="fas fa-user-circle"></i>
+                <span>Login</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-header">
+                <span id="currentThreadTitle">PyChat</span>
+                <div>
+                    <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                    <select class="model-selector" id="modelSelector">
+                        {% for model_key, model_info in available_models.items() %}
+                            <option value="{{ model_key }}" {% if model_key == current_model_key %}selected{% endif %}>
+                                {{ model_key }} ({{ model_info.description.split('(')[0] }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="chat-area" id="chatArea">
+                <!-- Messages will be dynamically added here -->
+            </div>
+            <div class="limits-notification" id="limitsNotification">
+                You only have <span id="messagesLeft">20</span> messages left. <a href="#" id="resetLimits">Sign in to reset your limits</a>
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-input-container">
+                    <textarea class="chat-input" id="messageInput" placeholder="Type your message here..." rows="1"></textarea>
+                    <button class="chat-options-button" id="optionsButton"><i class="fas fa-paperclip"></i></button>
+                    <button class="send-button" id="sendButton">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize variables
+        let threads = {
+            current: {
+                title: "Available models",
+                messages: [
+                    {
+                        role: "assistant",
+                        content: "I am currently running on the {{ current_model_name }} model."
+                    }
+                ]
+            },
+            welcome: {
+                title: "Welcome to PyChat",
+                messages: [
+                    {
+                        role: "assistant",
+                        content: "# Welcome to PyChat\n\nThis is your AI assistant powered by PyChat. You can ask me questions, and I'll do my best to help you.\n\n## Features\n\n- Multiple chat threads\n- Dark/light theme\n- Model selection\n- Markdown support"
+                    }
+                ]
+            },
+            faq: {
+                title: "FAQ",
+                messages: [
+                    {
+                        role: "assistant",
+                        content: "# Frequently Asked Questions\n\n## What can you do?\nI can answer questions, provide information, assist with various tasks, and engage in conversations.\n\n## What models are available?\nThe available models depend on your system configuration. You can select different models from the dropdown in the top-right corner."
+                    }
+                ]
+            }
+        };
+        
+        let currentThreadId = "current";
+        let messagesLeft = 20;
+        let isProcessing = false;
+        const messageConverter = new showdown.Converter({
+            tables: true,
+            tasklists: true,
+            strikethrough: true,
+            ghCodeBlocks: true
+        });
+        
+        // DOM Elements
+        const chatArea = document.getElementById('chatArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const threadItems = document.querySelectorAll('.thread-item');
+        const limitsNotification = document.getElementById('limitsNotification');
+        const messagesLeftSpan = document.getElementById('messagesLeft');
+        const currentThreadTitle = document.getElementById('currentThreadTitle');
+        const modelSelector = document.getElementById('modelSelector');
+        
+        // Initialize the UI
+        function initUI() {
+            renderThread(currentThreadId);
+            updateMessagesLeft(messagesLeft);
+            
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (this.scrollHeight > 150) {
+                    this.style.overflowY = 'auto';
+                } else {
+                    this.style.overflowY = 'hidden';
+                }
+            });
+            
+            // Handle Enter key for sending
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+        
+        // Render a thread
+        function renderThread(threadId) {
+            const thread = threads[threadId];
+            if (!thread) return;
+            
+            currentThreadId = threadId;
+            currentThreadTitle.textContent = thread.title;
+            chatArea.innerHTML = '';
+            
+            thread.messages.forEach(message => {
+                appendMessage(message.role, message.content);
+            });
+            
+            // Update active thread in sidebar
+            threadItems.forEach(item => {
+                if (item.dataset.id === threadId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // Scroll to bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // Append a message to the chat
+        function appendMessage(role, content, isTemporary = false) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role === 'user' ? 'user-message' : 'bot-message'}`;
+            
+            // Convert markdown to HTML
+            const htmlContent = messageConverter.makeHtml(content);
+            messageEl.innerHTML = htmlContent;
+            
+            if (isTemporary) {
+                messageEl.classList.add('temporary');
+            }
+            
+            chatArea.appendChild(messageEl);
+            
+            // Add current time
+            const now = new Date();
+            const timeEl = document.createElement('div');
+            timeEl.className = 'message-time';
+            timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageEl.appendChild(timeEl);
+            
+            // Apply syntax highlighting to code blocks
+            messageEl.querySelectorAll('pre code').forEach(block => {
+                hljs.highlightBlock(block);
+            });
+            
+            // Scroll to bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        // Remove temporary message
+        function removeTemporaryMessage() {
+            const tempMessage = chatArea.querySelector('.temporary');
+            if (tempMessage) {
+                chatArea.removeChild(tempMessage);
+            }
+        }
+        
+        // Send a message
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+            
+            // Update UI
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            appendMessage('user', message);
+            
+            // Add a typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            chatArea.appendChild(typingIndicator);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            isProcessing = true;
+            
+            try {
+                // Add to thread
+                if (!threads[currentThreadId].messages.some(m => m.role === 'user' && m.content === message)) {
+                    threads[currentThreadId].messages.push({
+                        role: 'user',
+                        content: message
+                    });
+                }
+                
+                // Call API
+                const model = modelSelector.value;
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: message,
+                        model: model
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                chatArea.removeChild(typingIndicator);
+                
+                // Show response
+                appendMessage('assistant', data.response);
+                
+                // Add to thread
+                threads[currentThreadId].messages.push({
+                    role: 'assistant',
+                    content: data.response
+                });
+                
+                // Update messages left
+                updateMessagesLeft(messagesLeft - 1);
+            } catch (error) {
+                console.error('Error sending message:', error);
+                
+                // Remove typing indicator
+                chatArea.removeChild(typingIndicator);
+                
+                // Show error message
+                appendMessage('assistant', 'Sorry, I encountered an error while processing your request. Please try again.');
+            } finally {
+                isProcessing = false;
+            }
+        }
+        
+        // Create a new thread
+        function createNewThread() {
+            const id = 'thread_' + Date.now();
+            threads[id] = {
+                title: 'New conversation',
+                messages: []
+            };
+            
+            // Add to sidebar
+            const threadItem = document.createElement('div');
+            threadItem.className = 'thread-item';
+            threadItem.textContent = 'New conversation';
+            threadItem.dataset.id = id;
+            threadItem.addEventListener('click', () => {
+                renderThread(id);
+            });
+            
+            // Insert after "Today" label
+            const todayLabel = document.querySelector('.thread-list-label');
+            todayLabel.parentNode.insertBefore(threadItem, todayLabel.nextSibling);
+            
+            // Switch to new thread
+            renderThread(id);
+        }
+        
+        // Update messages left counter
+        function updateMessagesLeft(count) {
+            messagesLeft = count;
+            messagesLeftSpan.textContent = messagesLeft;
+            limitsNotification.style.display = messagesLeft < 10 ? 'block' : 'none';
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+        }
+        
+        // Change model
+        async function changeModel(modelKey) {
+            const response = await fetch('/api/set-model', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelKey
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                // Add system message about model change
+                appendMessage('assistant', `Model changed to ${modelKey}`);
+                threads[currentThreadId].messages.push({
+                    role: 'assistant',
+                    content: `Model changed to ${modelKey}`
+                });
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', initUI);
+        sendButton.addEventListener('click', sendMessage);
+        newChatBtn.addEventListener('click', createNewThread);
+        themeToggle.addEventListener('click', toggleTheme);
+        modelSelector.addEventListener('change', (e) => changeModel(e.target.value));
+        
+        // Thread selection
+        threadItems.forEach(item => {
+            item.addEventListener('click', () => {
+                renderThread(item.dataset.id);
+            });
+        });
+    </script>
+</body>
+</html> 
